@@ -23,7 +23,10 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -34,10 +37,38 @@ public class VehicleService {
 
 
     public List<Vehicle> getAll() {
-        return sortFirst(repo.findAll());
+        return repo.findAll();
     }
 
-    private List<Vehicle> sortFirst(List<Vehicle> vehicleList) {
+    public Vehicle getById(String id) {
+        return repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Could not found a vehicle with id: " + id));
+    }
+
+
+    public Vehicle create(Vehicle newEmp) {
+        return repo.save(newEmp);
+    }
+
+
+    public List<Vehicle> createAll(List<Vehicle> vehicleList) {
+        return repo.saveAll(vehicleList);
+    }
+
+
+    public Vehicle updateById(String id, Vehicle newVehicle) {
+
+        Vehicle oldVehicle = getById(id);
+        oldVehicle.setLicensePlate(newVehicle.getLicensePlate());
+        oldVehicle.setVehicleType(newVehicle.getVehicleType());
+        oldVehicle.setCargoType(newVehicle.getCargoType());
+        oldVehicle.setItp(newVehicle.getItp());
+        oldVehicle.setRca(newVehicle.getRca());
+        oldVehicle.setRovinieta(newVehicle.getRovinieta());
+        oldVehicle.setCargoInsurance(newVehicle.getCargoInsurance());
+        return repo.save(oldVehicle);
+    }
+
+    public List<Vehicle> updateAndSortPriorities(List<Vehicle> vehicleList) {
         vehicleList.forEach(vehicle -> {
 
             //sort asc by itp priority
@@ -97,40 +128,15 @@ public class VehicleService {
             }
         });
 
+        //save new priorities
+        createAll(vehicleList);
+
         vehicleList.sort(new SortByItpPriority());
         vehicleList.sort(new SortByRcaPriority());
         vehicleList.sort(new SortByRovinietaPriority());
         vehicleList.sort(new SortByCargoInsurancePriority());
+
         return vehicleList;
-    }
-
-    public Vehicle getById(String id) {
-        return repo.findById(id).orElseThrow(() ->
-                new ResourceNotFoundException("Could not found a vehicle with id: " + id));
-    }
-
-
-    public Vehicle create(Vehicle newEmp) {
-        return repo.save(newEmp);
-    }
-
-
-    public List<Vehicle> createAll(List<Vehicle> vehicleList) {
-        return repo.saveAll(vehicleList);
-    }
-
-
-    public Vehicle updateById(String id, Vehicle newVehicle) {
-
-        Vehicle oldVehicle = getById(id);
-        oldVehicle.setLicensePlate(newVehicle.getLicensePlate());
-        oldVehicle.setVehicleType(newVehicle.getVehicleType());
-        oldVehicle.setCargoType(newVehicle.getCargoType());
-        oldVehicle.setItp(newVehicle.getItp());
-        oldVehicle.setRca(newVehicle.getRca());
-        oldVehicle.setRovinieta(newVehicle.getRovinieta());
-        oldVehicle.setCargoInsurance(newVehicle.getCargoInsurance());
-        return repo.save(oldVehicle);
     }
 
 
@@ -166,6 +172,8 @@ public class VehicleService {
 
         if (!observationDocuments.isEmpty()) {
             mongoTemplate.getCollection("vehicles").insertMany(observationDocuments);
+            //update the new priorities inserted
+            updateAndSortPriorities(getAll());
             body.put("message", "Json file imported successfully, " + observationDocuments.size() + " docs imported");
         }
 

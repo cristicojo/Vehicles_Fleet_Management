@@ -29,7 +29,7 @@ public class VehicleController {
     }
 
 
-    @GetMapping(value = "/Vehicle/{id}")
+    @GetMapping(value = "/vehicle/{id}")
     public ResponseEntity<Vehicle> findById(@PathVariable(value = "id") String id) {
         return new ResponseEntity<>(service.getById(id), HttpStatus.OK);
     }
@@ -47,13 +47,18 @@ public class VehicleController {
     }
 
 
-    @PutMapping(value = "/Vehicle/{id}")
+    @PutMapping(value = "/vehicle/{id}")
     public ResponseEntity<Vehicle> update(@RequestBody Vehicle newEmp, @PathVariable(value = "id") String id) {
         return new ResponseEntity<>(service.updateById(id, newEmp), HttpStatus.OK);
     }
 
+    @GetMapping(value = "/updatePriorities")
+    public ResponseEntity<List<Vehicle>> updatePriorities() {
+        return new ResponseEntity<>(service.updateAndSortPriorities(service.getAll()), HttpStatus.OK);
+    }
 
-    @DeleteMapping(value = "/Vehicle/{id}")
+
+    @DeleteMapping(value = "/vehicle/{id}")
     public ResponseEntity<Map<String, Object>> deleteById(@PathVariable(value = "id") String id) {
         return new ResponseEntity<>(service.remove(id), HttpStatus.OK);
     }
